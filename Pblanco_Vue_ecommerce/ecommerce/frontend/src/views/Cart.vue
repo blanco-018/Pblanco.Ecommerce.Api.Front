@@ -11,7 +11,7 @@
             <div style="display: inline-grid;justify-content: space-between;align-items: center;margin-top: 70px; border: 2px solid blue;">
 
               <li v-for="product in products" :key="product.id" 
-              style="color: blue;border: blue 3px solid;width: 600px;height:600px;">
+              style="color: blue;border: blue 3px solid;width: 600px;height:700px;">
 
                 <p style="margin-top:10px; color:yellow;font-size:50px;">{{ product.productName }}</p>
 
@@ -25,6 +25,22 @@
                   <b>BORRAR</b>
                 </b-button>
 
+                <br><br><br>
+
+                <b-button @click="upgradeCantidad(product.id,product.cantidad,product.productId,product.productName,product.productPrice,product.mainImage)"
+                style="width: 100px;background-color:green;color: black;">
+                  <b>Añadir mas</b>
+                </b-button>
+
+                <b-button @click="degradeCantidad(product.id,product.cantidad,product.productId,product.productName,product.productPrice,product.mainImage)"
+                style="width: 100px;background-color:red;color: black; margin-left:15px;">
+                  <b>Quitar productos</b>
+                </b-button>
+
+                <div style="margin-right: 5px;">
+                  <p>{{precioTotal(product.cantidad, product.productPrice)}} €</p>
+                </div>
+
               </li>
             </div>
           </section>
@@ -36,6 +52,7 @@
             <b>Confirmar pago</b>
           </b-button>
           
+
         </router-link>
       </template>
     </div>
@@ -61,6 +78,61 @@ export default {
     };
   },
   methods: {
+    upgradeCantidad(id, cantidad, productId, productName, productPrice,mainImage) {
+      fetch(api_url("/cart/" + id), {
+        method: "PUT",
+        body: JSON.stringify({
+          productId: productId,
+          productName: productName,
+          cantidad: cantidad + 1,
+          productPrice: productPrice,
+          mainImage:mainImage,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+        fetch(api_url("/cart/"))
+        .then((result) => result.json())
+        .then((data) => (this.products = data));  
+    },
+      degradeCantidad(id, cantidad, productId, productName, productPrice,mainImage) {
+      if (cantidad > 1) {
+        fetch(api_url("/cart/" + id), {
+          method: "PUT",
+          body: JSON.stringify({
+            productId: productId,
+            productName: productName,
+            cantidad: cantidad - 1,
+            productPrice: productPrice,
+            mainImage:mainImage,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        fetch(api_url("/cart/"))
+          .then((result) => result.json())
+          .then((data) => (this.products = data));
+      } else {
+        fetch(api_url("/cart/" + id), {
+          method: "DELETE",
+          body: JSON.stringify({
+            productId: productId,
+            productName: productName,
+            cantidad: cantidad,
+            productPrice: productPrice,
+            mainImage:mainImage,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        fetch(api_url("/cart/"))
+          .then((result) => result.json())
+          .then((data) => (this.products = data));
+      }
+      },
     eliminarProducto(id, productId, productName, productPrice) {
       fetch(api_url("/cart/" + id), {
         method: "DELETE",
@@ -77,6 +149,9 @@ export default {
         .then((result) => result.json())
         .then((data) => (this.products = data));
     },
+    precioTotal(productPrice, cantidad) {
+      return parseFloat(productPrice) * parseFloat(cantidad);
+    },
     ConfirmarCompra() {
       for (let i = 0; i < this.products.length; i++) {
         fetch(api_url("/orders/"), {
@@ -85,6 +160,7 @@ export default {
             productId: this.products[i].id,
             productName: this.products[i].productName,
             productPrice: this.products[i].productPrice,
+            precioTotal: this.products[i].quantity * this.products[i].productPrice,
           }),
           headers: {
             "Content-Type": "application/json",
